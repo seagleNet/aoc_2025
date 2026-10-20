@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
 
@@ -27,6 +28,9 @@ main :: proc() {
 	defer delete(ids)
 	unexpired_count := count_unexpired(ids, ranges)
 	fmt.printfln("part 1: %v", unexpired_count)
+
+	count := sort_and_count_unique_ids(ranges)
+	fmt.printfln("part 2: %v", count)
 }
 
 read_lines :: proc(data: []byte) -> []string {
@@ -89,11 +93,35 @@ count_unexpired :: proc(ids: []int, ranges: []Range) -> int {
 	result := 0
 	for id in ids {
 		for r in ranges {
-			if id >= r.lo && id <= r.hi {
+			if id_in_range(id, r) {
 				result += 1
 				break
 			}
 		}
 	}
 	return result
+}
+
+sort_and_count_unique_ids :: proc(ranges: []Range) -> int {
+	result := 0
+	slice.stable_sort_by(ranges, proc(i, j: Range) -> bool {
+		return i.lo < j.lo
+	})
+
+	curr := ranges[0]
+	for r in ranges[1:] {
+		if id_in_range(r.lo, curr) {
+			curr.hi = max(r.hi, curr.hi)
+		} else {
+			result += curr.hi - curr.lo + 1
+			curr = r
+		}
+	}
+	result += curr.hi - curr.lo + 1
+
+	return result
+}
+
+id_in_range :: proc(id: int, range: Range) -> bool {
+	return id >= range.lo && id <= range.hi
 }
